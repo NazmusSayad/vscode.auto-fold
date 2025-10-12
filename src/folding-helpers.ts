@@ -59,15 +59,36 @@ export async function getFoldingRangeImports(
   }
 }
 
-export async function foldSelection(
-  start: number,
-  editor: vscode.TextEditor | null
+function isEndOutsideVisibleRange(end: number, editor: vscode.TextEditor) {
+  const visibleStart = editor.visibleRanges[0].start.line
+  return visibleStart > end
+}
+
+export function foldSelectionRange(
+  range: vscode.FoldingRange,
+  editor: vscode.TextEditor
 ) {
+  if (isEndOutsideVisibleRange(range.end, editor)) {
+    return console.log('End is before visible range, skipping fold')
+  }
+
+  return foldSelectionStart(range.start)
+}
+
+export function unfoldSelectionRange(
+  range: vscode.FoldingRange,
+  editor: vscode.TextEditor
+) {
+  if (isEndOutsideVisibleRange(range.end, editor)) {
+    return console.log('End is before visible range, skipping unfold')
+  }
+
+  return unfoldSelectionStart(range.start)
+}
+
+export async function foldSelectionStart(start: number) {
   try {
     console.warn('Folding selection at line:', start)
-    if (await isAlreadyFolded(start, editor)) {
-      return console.log('Line already folded, skipping')
-    }
 
     await vscode.commands.executeCommand('editor.fold', {
       selectionLines: [start],
@@ -79,30 +100,14 @@ export async function foldSelection(
   }
 }
 
-export async function unfoldSelection(start: number) {
+export async function unfoldSelectionStart(start: number) {
   try {
     console.warn('Unfolding selection at line:', start)
-    await vscode.commands.executeCommand('editor.unfold', {
+
+    await vscode.commands.executeCommand('editor.unfoldRecursively', {
       selectionLines: [start],
     })
   } catch (err) {
     console.error('Error unfolding selection:', err)
   }
-}
-
-export async function isAlreadyFolded(
-  start: number,
-  editor: vscode.TextEditor | null
-): Promise<boolean> {
-  return false
-}
-
-export function getTextEditorByDocument(
-  document: vscode.TextDocument
-): vscode.TextEditor | null {
-  return (
-    vscode.window.visibleTextEditors.find(
-      (editor) => editor.document.uri.toString() === document.uri.toString()
-    ) ?? null
-  )
 }

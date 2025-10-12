@@ -1,11 +1,12 @@
 import * as vscode from 'vscode'
 import ConfigService from './config-service'
 import {
-  foldSelection,
+  foldSelectionRange,
+  foldSelectionStart,
   getFoldingRangeImports,
   getStringSearchImports,
-  getTextEditorByDocument,
-  unfoldSelection,
+  unfoldSelectionRange,
+  unfoldSelectionStart,
 } from './folding-helpers'
 
 export default class FoldingService extends ConfigService {
@@ -54,7 +55,7 @@ export default class FoldingService extends ConfigService {
     ) {
       const strSearchImports = getStringSearchImports(document)
       for (const start of strSearchImports) {
-        await foldSelection(start, getTextEditorByDocument(document))
+        await foldSelectionStart(start)
       }
 
       console.log(
@@ -71,7 +72,7 @@ export default class FoldingService extends ConfigService {
      */
     const foldingRanges = await getFoldingRangeImports(document.uri, document)
     for (const range of foldingRanges) {
-      await foldSelection(range.start, getTextEditorByDocument(document))
+      await foldSelectionStart(range.start)
     }
 
     console.log(
@@ -129,9 +130,9 @@ export default class FoldingService extends ConfigService {
         rangeStart <= selection.end.line && rangeEnd >= selection.end.line
 
       if (isStartInRange || isEndInRange) {
-        await unfoldSelection(range.start)
+        await unfoldSelectionRange(range, event.textEditor)
       } else {
-        await foldSelection(range.start, event.textEditor)
+        await foldSelectionRange(range, event.textEditor)
       }
     }
   }
