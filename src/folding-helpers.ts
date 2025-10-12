@@ -59,11 +59,20 @@ export async function getFoldingRangeImports(
   }
 }
 
-export async function foldSelection(start: number) {
+export async function foldSelection(
+  start: number,
+  editor: vscode.TextEditor | null
+) {
   try {
-    console.log('Folding selection at line:', start)
+    console.warn('Folding selection at line:', start)
+    if (isAlreadyFolded(start, editor)) {
+      return console.log('Line already folded, skipping')
+    }
+
     await vscode.commands.executeCommand('editor.fold', {
       selectionLines: [start],
+      direction: 'up',
+      levels: 1,
     })
   } catch (err) {
     console.error('Error folding selection:', err)
@@ -72,11 +81,40 @@ export async function foldSelection(start: number) {
 
 export async function unfoldSelection(start: number) {
   try {
-    console.log('Unfolding selection at line:', start)
+    console.warn('Unfolding selection at line:', start)
     await vscode.commands.executeCommand('editor.unfold', {
       selectionLines: [start],
     })
   } catch (err) {
     console.error('Error unfolding selection:', err)
   }
+}
+
+export function isAlreadyFolded(
+  start: number,
+  editor: vscode.TextEditor | null
+): boolean {
+  if (!editor) return false
+  const doc = editor.document
+
+  if (start < 0 || start + 1 >= doc.lineCount) return false
+
+  const nextLine = start + 1
+  for (const range of editor.visibleRanges) {
+    if (range.start.line <= nextLine && nextLine <= range.end.line) {
+      return false
+    }
+  }
+
+  return true
+}
+
+export function getTextEditorByDocument(
+  document: vscode.TextDocument
+): vscode.TextEditor | null {
+  return (
+    vscode.window.visibleTextEditors.find(
+      (editor) => editor.document.uri.toString() === document.uri.toString()
+    ) ?? null
+  )
 }

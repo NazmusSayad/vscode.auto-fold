@@ -4,6 +4,7 @@ import {
   foldSelection,
   getFoldingRangeImports,
   getStringSearchImports,
+  getTextEditorByDocument,
   unfoldSelection,
 } from './folding-helpers'
 
@@ -52,7 +53,9 @@ export default class FoldingService extends ConfigService {
         document.languageId.startsWith('typescript'))
     ) {
       const strSearchImports = getStringSearchImports(document)
-      for (const start of strSearchImports) await foldSelection(start)
+      for (const start of strSearchImports) {
+        await foldSelection(start, getTextEditorByDocument(document))
+      }
 
       console.log(
         '> `onDocumentOpen`',
@@ -67,7 +70,9 @@ export default class FoldingService extends ConfigService {
      * So we are using the above method to fold the first import statement
      */
     const foldingRanges = await getFoldingRangeImports(document.uri, document)
-    for (const range of foldingRanges) await foldSelection(range.start)
+    for (const range of foldingRanges) {
+      await foldSelection(range.start, getTextEditorByDocument(document))
+    }
 
     console.log(
       '> `onDocumentOpen`',
@@ -126,7 +131,7 @@ export default class FoldingService extends ConfigService {
       if (isStartInRange || isEndInRange) {
         await unfoldSelection(range.start)
       } else {
-        await foldSelection(range.start)
+        await foldSelection(range.start, event.textEditor)
       }
     }
   }
