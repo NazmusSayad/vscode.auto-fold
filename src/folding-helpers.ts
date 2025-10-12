@@ -59,15 +59,14 @@ export async function getFoldingRangeImports(
   }
 }
 
-function isEndOutsideVisibleRange(end: number, editor: vscode.TextEditor) {
-  const visibleStart = editor.visibleRanges[0].start.line
-  return visibleStart > end
-}
-
 export function foldSelectionRange(
   range: vscode.FoldingRange,
   editor: vscode.TextEditor
 ) {
+  if (isStartInsideFoldingRange(range.start, editor)) {
+    return console.log('Start is inside a folded range, skipping fold')
+  }
+
   if (isEndOutsideVisibleRange(range.end, editor)) {
     return console.log('End is before visible range, skipping fold')
   }
@@ -79,11 +78,15 @@ export function unfoldSelectionRange(
   range: vscode.FoldingRange,
   editor: vscode.TextEditor
 ) {
+  if (!isStartInsideFoldingRange(range.start, editor)) {
+    return console.log('Start is not inside a folded range, skipping unfold')
+  }
+
   if (isEndOutsideVisibleRange(range.end, editor)) {
     return console.log('End is before visible range, skipping unfold')
   }
 
-  return unfoldSelectionStart(range.start)
+  return unfoldSelectionStart(range.start + 1)
 }
 
 export async function foldSelectionStart(start: number) {
@@ -92,7 +95,6 @@ export async function foldSelectionStart(start: number) {
 
     await vscode.commands.executeCommand('editor.fold', {
       selectionLines: [start],
-      direction: 'up',
       levels: 1,
     })
   } catch (err) {
@@ -104,10 +106,53 @@ export async function unfoldSelectionStart(start: number) {
   try {
     console.warn('Unfolding selection at line:', start)
 
-    await vscode.commands.executeCommand('editor.unfoldRecursively', {
+    await vscode.commands.executeCommand('editor.unfold', {
       selectionLines: [start],
     })
   } catch (err) {
     console.error('Error unfolding selection:', err)
   }
+}
+
+function isEndOutsideVisibleRange(end: number, editor: vscode.TextEditor) {
+  const visibleStart = editor.visibleRanges[0].start.line
+  return visibleStart > end
+}
+
+function isStartInsideFoldingRange(
+  start: number,
+  editor: vscode.TextEditor
+): boolean {
+  const foldedAreas: { start: number; end: number }[] = []
+  const visibleRanges = editor.visibleRanges
+  if (visibleRanges.length === 0) {
+    console.log('No visible ranges, assuming everything is folded')
+    return false
+  }
+
+  let prevEnd: number | null = null
+
+  console.log('Visible ranges:', visibleRanges)
+  for (const range of visibleRanges) {
+    if (prevEnd !== null && range.start.line > prevEnd) {
+      foldedAreas.push({ start: prevEnd, end: range.start.line })
+    }
+
+    prevEnd = range.end.line
+  }
+
+  if (foldedAreas.length === 0) {
+    console.log('No folded areas detected')
+    return false
+  }
+
+  console.log('Folded areas:', foldedAreas)
+  for (const area of foldedAreas) {
+    if (start >= area.start && start <= area.end) {
+      console.log('Start is inside a folded area:', area)
+      return true
+    }
+  }
+
+  return false
 }
