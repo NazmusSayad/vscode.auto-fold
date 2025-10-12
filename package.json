@@ -10,7 +10,7 @@
     "check-types": "tsc --noEmit",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
-    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "watch:tsc": "tsc --watch --project tsconfig.json",
     "compile": "npm run check-types && npm run lint && node esbuild.js",
     "build": "npm run check-types && npm run lint && node esbuild.js --production && vsce package"
   },

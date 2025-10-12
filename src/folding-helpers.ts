@@ -65,7 +65,7 @@ export async function foldSelection(
 ) {
   try {
     console.warn('Folding selection at line:', start)
-    if (isAlreadyFolded(start, editor)) {
+    if (await isAlreadyFolded(start, editor)) {
       return console.log('Line already folded, skipping')
     }
 
@@ -90,23 +90,11 @@ export async function unfoldSelection(start: number) {
   }
 }
 
-export function isAlreadyFolded(
+export async function isAlreadyFolded(
   start: number,
   editor: vscode.TextEditor | null
-): boolean {
-  if (!editor) return false
-  const doc = editor.document
-
-  if (start < 0 || start + 1 >= doc.lineCount) return false
-
-  const nextLine = start + 1
-  for (const range of editor.visibleRanges) {
-    if (range.start.line <= nextLine && nextLine <= range.end.line) {
-      return false
-    }
-  }
-
-  return true
+): Promise<boolean> {
+  return false
 }
 
 export function getTextEditorByDocument(
